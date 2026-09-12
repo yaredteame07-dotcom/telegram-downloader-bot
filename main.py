@@ -1,75 +1,67 @@
 import os
 import asyncio
+from threading import Thread
+from flask import Flask
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import yt_dlp
 
-TOKEN = "8770860759:AAEB8trinXchKw7FdXSotDMu0Sd-Y8DaVwc"
+# Fake HTTP Server for Render Free Tier
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
+
+TOKEN = "7953259837:AAENJ_vVfXz80hS3tQp26TjUoM7S5z_1-u0"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("ሰላም! 🎬 የቪዲዮ እና ፎቶ ማውረጃ ቦት ነኝ።\nእባክዎ የ TikTok ወይም የ YouTube ሊንክ ይላኩልኝ!")
+    await update.message.reply_text("ሰላም! የ TikTok ወይም የ YouTube ቪዲዮ ሊንክ ላክልኝ።")
 
 async def download_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    raw_url = update.message.text.strip()
-    url = raw_url.split('?')[0]
-    
-    if not url.startswith("http"):
-        await update.message.reply_text("⚠️ እባክዎ ትክክለኛ ሊንክ ያስገቡ!")
+    url = update.message.text
+    if not ("tiktok.com" in url or "youtube.com" in url or "youtu.be" in url):
         return
 
-    status_msg = await update.message.reply_text("⏳ ሚዲያው እየወረደ ነው... እባክዎ ትንሽ ይታገሱ።")
+    status_msg = await update.message.reply_text("ቪዲዮው እየወረደ ነው... እባክህ ትንሽ ጠብቅ።")
 
     ydl_opts = {
         'format': 'best',
-        'outtmpl': 'downloaded_media.%(ext)s',
-        'quiet': True,
-        'no_warnings': True,
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'outtmpl': 'downloaded_video.%(ext)s',
+        'quiet': True
     }
 
     try:
-        loop = asyncio.get_event_loop()
-        def run_ydl():
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            filename = ydl.prepare_filename(info)
 
-        await loop.run_in_executor(None, run_ydl)
+        await status_msg.edit_text("ቪዲዮው ወርዷል! አሁን ወደ አንተ እየተላከ ነው...")
 
-        downloaded_files = [f for f in os.listdir('.') if f.startswith("downloaded_media.")]
+        with open(filename, 'rb') as video_file:
+            await update.message.reply_video(video=video_file)
 
-        if downloaded_files:
-            await status_msg.edit_text("📤 ፋይሉ ወደ ቴሌግራም እየተጫነ ነው...")
-            for downloaded_file in downloaded_files:
-                ext = downloaded_file.split('.')[-1].lower()
-                with open(downloaded_file, 'rb') as media_file:
-                    if ext in ['mp4', 'mkv', 'webm', 'mov']:
-                        await update.message.reply_video(video=media_file, caption="✅ ቪዲዮው ተዘጋጅቷል!")
-                    elif ext in ['jpg', 'jpeg', 'png', 'webp']:
-                        await update.message.reply_photo(photo=media_file, caption="✅ ፎቶው ተዘጋጅቷል!")
-                    else:
-                        await update.message.reply_document(document=media_file, caption="✅ ፋይሉ ተዘጋጅቷል!")
-                os.remove(downloaded_file)
-            await status_msg.delete()
-        else:
-            await status_msg.edit_text("❌ ፋይሉን ማውረድ አልተቻለም።")
+        if os.path.exists(filename):
+            os.remove(filename)
 
     except Exception as e:
-        await status_msg.edit_text(f"❌ ስህተት አጋጥሟል፦ {str(e)}")
-        for f in os.listdir('.'):
-            if f.startswith("downloaded_media."):
-                os.remove(f)
+        await status_msg.edit_text(f"ስህተት ተከሰተ፦ {str(e)}")
 
-if __name__ == '__main__':
-    app = ApplicationBuilder()\
-        .token(TOKEN)\
-        .connect_timeout(60.0)\
-        .read_timeout(60.0)\
-        .write_timeout(60.0)\
-        .get_updates_read_timeout(60.0)\
-        .build()
-    
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_video))
-    
-    print("🤖 ቦቱ ስራ ጀምሯል...")
-    app.run_polling()
+def main():
+    # HTTP Server በ Background እንዲሰራ ማስነሳት
+    Thread(target=run_flask).start()
+
+    # Telegram Bot ማስነሳት
+    application = ApplicationBuilder().token(TOKEN).build()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_video))
+
+    print("🤖 ቦቱ ሥራ ጀምሯል...")
+    application.run_polling()
+
+if __name__ == "__main__":
+    main()
