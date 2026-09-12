@@ -1,4 +1,5 @@
-python-telegram-bot==20.3
+python-telegram-bot>=20.0
 yt-dlp
 flask
-
+httpcore>=1.0.0
+httpx>=0.25.0
