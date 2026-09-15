@@ -3,3 +3,4 @@ yt-dlp>=2024.03.10
 flask
 httpcore>=1.0.0
 httpx>=0.25.0
+requests
