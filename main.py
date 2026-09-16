@@ -44,13 +44,17 @@ async def download_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     status_msg = await update.message.reply_text("⏳ ሚዲያው እየወረደ ነው... እባክህ ትንሽ ይታገሱ።")
     
     # Render RAM እና Format ስህተት እንዳይፈጥር የተስተካከለ ማዋቀሪያ
-    ydl_opts = {
+        ydl_opts = {
         'format': 'best[ext=mp4]/best',
         'outtmpl': 'downloaded_video.%(ext)s',
         'quiet': True,
         'no_warnings': True,
-        'concurrent_fragment_downloads': 1
+        'concurrent_fragment_downloads': 1,
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
     }
+
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
