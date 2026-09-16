@@ -31,7 +31,7 @@ def keep_alive():
                 pass
             time.sleep(600)  # በየ 10 ደቂቃው
 
-TOKEN = "7953259837:AAENJ_vVfXz80hS3tQp26TjUoM7S5z_1-u0"
+TOKEN = "8770860759:AAGrHcAom54k2SdEoZIsF9XrrxsmNSevQRE"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("ሰላም! የ TikTok ወይም የ YouTube ቪዲዮ ሊንክ ላክልኝ።")
