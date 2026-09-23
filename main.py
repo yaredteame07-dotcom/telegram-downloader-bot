@@ -50,13 +50,16 @@ async def download_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
     # TikTok እና YouTube እገዳዎችን የሚያልፍ ማዋቀሪያ
-    ydl_opts = {
+        ydl_opts = {
         'format': 'best[ext=mp4]/best',
         'outtmpl': 'downloaded_video.%(ext)s',
         'quiet': True,
         'no_warnings': True,
         'concurrent_fragment_downloads': 1,
         'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web'],
+            },
             'tiktok': {
                 'app_version': '30.0.0',
                 'manifest_app_version': '30.0.0',
@@ -68,6 +71,7 @@ async def download_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
             'Accept-Language': 'en-US,en;q=0.5',
         }
     }
+
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
